@@ -1,0 +1,110 @@
+{
+  "proyecto": {
+    "nombre": "factory-interfaz",
+    "descripcion": "Interfaz web para pedir software al factory, seguir cada pedido y editar sus datos de diseño",
+    "visibilidad": "publico"
+  },
+  "escenario": "original",
+  "solicitante": {
+    "tipo": "persona",
+    "canal": "chat"
+  },
+  "objetivo": "Usar el factory desde una página web, sin entrar a GitHub: cargar un pedido, responder el relevamiento, lanzarlo, ver en qué etapa está y recibir el resultado; y ver y editar los datos de diseño de los proyectos ya construidos, lo que genera pedidos de cambio.",
+  "usuarios": "La persona dueña de una instalación del factory. No necesita saber usar GitHub. Trae dos claves propias: un token de GitHub con acceso al repo de su factory y una clave de API de Anthropic.",
+  "entradas_y_salidas": "La página tiene cuatro secciones.\n1. CONEXIÓN. El usuario indica el repo de su factory (dueño/nombre), su token de GitHub, su clave de API de Anthropic y el modelo para la entrevista (por defecto claude-sonnet-5-5). Una casilla \"Recordar en este navegador\", desmarcada por defecto, decide dónde se guardan: desmarcada, solo mientras la pestaña está abierta; marcada, quedan en ese navegador. Un botón \"Olvidar claves\" las borra de los dos lugares. Al guardar se comprueba que el token llega al repo del factory, y se dice claramente si no. La página muestra qué permisos necesita el token y explica el riesgo de recordar las claves.\n2. PEDIDO NUEVO. El usuario escribe qué quiere, y puede adjuntar archivos: texto (.md, .txt) e imágenes (.png, .jpg, .webp, .gif), hasta 6. Las imágenes se reducen en el navegador antes de enviarse. Elige si es un software nuevo o un cambio a un proyecto existente (en ese caso lo elige de una lista). Después viene la entrevista: un modelo de Anthropic, llamado directamente desde el navegador, lee el pedido y los adjuntos y pregunta solo lo que falta, todo junto y numerado. El usuario responde. Hay hasta 2 rondas de preguntas por iniciativa del modelo, y el usuario puede pedir más. Al terminar, la página muestra el pedido tal como quedó entendido, campo por campo, con los supuestos marcados; el usuario puede corregir cualquier campo y tiene que confirmarlo. Al confirmar, la página lo lanza en el factory y pasa al seguimiento de ese pedido.\n3. SEGUIMIENTO. Lista de los pedidos del factory, del más nuevo al más viejo, con su estado. Al abrir uno se ve un esquema con los módulos del factory en orden, y cada módulo marcado como pendiente, en curso, listo, con falla o salteado. Mientras el pedido está corriendo, el esquema se actualiza solo. Cuando termina, se muestra el resultado que informó el factory, con el enlace al software publicado si lo hay.\n4. PROYECTOS. Lista de los proyectos construidos. Al abrir uno se ven sus datos de diseño: los pedidos que le dieron forma, en orden, con cada campo y sus adjuntos. El usuario puede editar cualquier campo y tocar \"Proponer cambio\": tiene que describir en una frase qué quiere cambiar, y la página arma un pedido de cambio para ese proyecto que incluye, campo por campo, el valor anterior y el nuevo. Ese pedido pasa por la misma pantalla de confirmación y se lanza igual que uno nuevo. La página nunca escribe en el repo de un proyecto.",
+  "ejemplos": [
+    {
+      "entrada": "Sin claves cargadas, el usuario abre Pedido nuevo, Seguimiento o Proyectos.",
+      "resultado": "La página no llama a ninguna API y lo lleva a Conexión, diciendo qué falta."
+    },
+    {
+      "entrada": "Conexión con la casilla \"Recordar en este navegador\" desmarcada; el usuario cierra la pestaña y vuelve a abrir la página.",
+      "resultado": "Las claves ya no están y la página las pide de nuevo."
+    },
+    {
+      "entrada": "El usuario escribe \"una página que convierta pulgadas a milímetros\", elige software nuevo y empieza la entrevista.",
+      "resultado": "La página muestra las preguntas del modelo. Después de las respuestas, muestra el pedido completo con los supuestos marcados y espera la confirmación antes de lanzar nada."
+    },
+    {
+      "entrada": "El usuario confirma un pedido que tiene una imagen adjunta.",
+      "resultado": "En el repo del factory queda un issue con el pedido en JSON, uno o más comentarios con la imagen en partes y, recién al final, la etiqueta factory:pedido. La página pasa al seguimiento de ese pedido."
+    },
+    {
+      "entrada": "Un pedido cuya corrida tiene el trabajo \"Preparar (pedido y repo)\" terminado con éxito y el paso \"Agente Builder\" en curso.",
+      "resultado": "En el esquema, Entrada, Preparación y Spec writer figuran listos, Builder en curso y los módulos siguientes pendientes."
+    },
+    {
+      "entrada": "Un pedido aprobado en la primera revisión: los trabajos \"Corregir (Builder)\" y \"Revisión 2 / Revisores y Approver\" figuran salteados.",
+      "resultado": "Corrección y Segunda revisión se muestran como salteados, no como falla ni como pendientes."
+    },
+    {
+      "entrada": "En Proyectos, el usuario cambia un campo del pedido original de un proyecto, escribe \"mostrar el peso también en libras\" y toca Proponer cambio.",
+      "resultado": "La página muestra un pedido de escenario cambio para ese proyecto, con esa frase como objetivo y el valor anterior y el nuevo del campo editado, y espera la confirmación."
+    },
+    {
+      "entrada": "La respuesta de una API trae un texto con etiquetas HTML, por ejemplo ` &lt;img src=x onerror=alert(1)&gt; `.",
+      "resultado": "Se muestra como texto, tal cual. No se interpreta como HTML ni se ejecuta nada."
+    }
+  ],
+  "limites": [
+    "Es una aplicación web estática, sin servidor propio y sin paso de compilación. Se publica con GitHub Pages.",
+    "No usa dependencias ni carga nada de terceros: ni bibliotecas, ni fuentes, ni scripts externos.",
+    "Solo se conecta a https://api.github.com y a https://api.anthropic.com. La página lo declara con una política de seguridad de contenido que no permite otros destinos ni scripts en línea.",
+    "Las claves nunca van en una URL, ni se muestran completas en pantalla, ni se escriben en la consola. Solo se envían al servicio al que pertenecen.",
+    "Todo texto que llega de una API, de un archivo o del usuario se muestra como texto, nunca como HTML.",
+    "No lanza un pedido sin la confirmación explícita del usuario.",
+    "No escribe en el repo de ningún proyecto ni modifica archivos del repo del factory. En el factory solo crea issues, comentarios y etiquetas.",
+    "No decide nada del recorrido: no aprueba, no mergea y no publica. Solo muestra lo que el factory informa.",
+    "En esta versión no se pueden pedir réplicas de un software existente ni proyectos privados.",
+    "No depende de un factory en particular: el repo del factory es un dato de la conexión.",
+    "La interfaz está en español rioplatense."
+  ],
+  "entorno": "Navegador de escritorio o de teléfono, versiones actuales. Publicada en GitHub Pages.",
+  "criterio_de_exito": "Sin abrir GitHub, el usuario carga sus claves, pide un software chico, responde la entrevista, confirma, ve avanzar el esquema etapa por etapa y llega al enlace del resultado. Después abre un proyecto ya construido, edita un dato de diseño y ve creado el pedido de cambio.",
+  "anexos": {
+    "nota": "Estos datos son el contrato entre la interfaz y el factory. La interfaz no copia el esquema del pedido, la ficha del relevamiento ni la lista de etapas: los lee del repo del factory cada vez, para no quedar desactualizada.",
+    "archivos_del_factory_que_lee": {
+      "esquemas/pedido.json": "Formato del pedido. La interfaz comprueba los campos obligatorios antes de lanzar; la validación completa la hace el factory.",
+      "agentes/relevamiento.md": "Instrucciones del modelo que hace la entrevista. Van como instrucciones de sistema, junto con el esquema del pedido.",
+      "brain/nucleo/etapas.json": "Módulos del esquema de seguimiento, en orden, y con qué trabajo y qué pasos de la corrida se corresponde cada uno.",
+      "como": "GET https://api.github.com/repos/{factory}/contents/{ruta} con el token; el contenido viene en base64."
+    },
+    "github": {
+      "encabezados": "Authorization: Bearer {token}; Accept: application/vnd.github+json",
+      "permisos_del_token": "Token de acceso personal de grano fino, limitado al repo del factory: Issues lectura y escritura, Actions lectura, Contents lectura. Los proyectos son públicos y se leen sin permisos extra.",
+      "lanzar_un_pedido": [
+        "1. POST /repos/{factory}/issues con title \"Pedido: {objetivo, hasta 80 caracteres}\" y body con el pedido dentro de un bloque ```json. Sin etiquetas.",
+        "2. Por cada parte de cada adjunto, POST /repos/{factory}/issues/{n}/comments con el formato de adjunto.",
+        "3. POST /repos/{factory}/issues/{n}/labels con [\"factory:pedido\"]. Esto dispara el recorrido; va siempre al final.",
+        "Si un paso falla, la página dice cuál y permite reintentar desde ese paso sin crear otro issue."
+      ],
+      "formato_de_adjunto": "<!-- factory:adjunto nombre=\"{nombre}\" parte=\"{i}\" de=\"{total}\" -->, salto de línea, ```base64, salto de línea, el contenido en base64, salto de línea, ```. Cada parte lleva como mucho 45000 caracteres de base64. Nombre: letras sin tilde, números, punto, guion y guion bajo, hasta 80 caracteres, empezando por letra o número.",
+      "limites_de_adjuntos": "Hasta 6 archivos de hasta 600000 bytes cada uno. Extensiones: png, jpg, jpeg, gif, webp, md, txt. La interfaz reduce cada imagen para que entre: lado mayor de hasta 1600 píxeles y, si hace falta, la convierte a JPEG bajando la calidad. Si aun así no entra, lo dice y no la adjunta.",
+      "listar_pedidos": "GET /repos/{factory}/issues?labels=factory:pedido&state=all&per_page=50. El pedido está en el cuerpo, en el bloque ```json.",
+      "corrida_de_un_pedido": "GET /repos/{factory}/actions/workflows/recorrido.yml/runs?per_page=50 y elegir la más reciente cuyo display_title sea \"Pedido #{n}\". Sus trabajos y pasos: GET /repos/{factory}/actions/runs/{id}/jobs?per_page=100. Cada trabajo y cada paso tiene name, status (queued, in_progress, completed) y conclusion (success, failure, skipped, cancelled).",
+      "estado_de_una_etapa": "Si la etapa declara pasos, se calcula con esos pasos de su trabajo; si no, con el trabajo entero. En curso: alguno está in_progress. Con falla: alguno terminó en failure o cancelled. Salteada: todos terminaron en skipped, o el trabajo no existe en la corrida y la etapa es opcional. Lista: todos terminaron y al menos uno con success. Pendiente: cualquier otro caso. La etapa \"entrada\" está lista en cuanto existe el issue.",
+      "actualizacion": "Mientras la corrida no terminó, se vuelve a consultar cada 10 segundos. Cuando termina, se deja de consultar.",
+      "resultado": "El último comentario del issue que no sea un adjunto. El factory lo escribe en Markdown simple: se muestra como texto, con los saltos de línea, y los enlaces https se pueden abrir en otra pestaña.",
+      "proyectos": "Los nombres salen de proyecto.nombre de los pedidos; el repo de cada uno es {dueño del factory}/{nombre}. Sus datos de diseño están en la carpeta .factory/pedidos/{numero}/ del repo del proyecto: pedido.json y, si hubo, adjuntos/. Se listan con GET /repos/{proyecto}/contents/.factory/pedidos. Si la carpeta no existe, el proyecto todavía no tiene datos de diseño guardados y la página lo dice."
+    },
+    "anthropic": {
+      "llamada": "POST https://api.anthropic.com/v1/messages con los encabezados x-api-key: {clave}, anthropic-version: 2023-06-01, content-type: application/json y anthropic-dangerous-direct-browser-access: true. Cuerpo: model, max_tokens, system y messages.",
+      "imagenes": "Una imagen va en el mensaje del usuario como un bloque {\"type\": \"image\", \"source\": {\"type\": \"base64\", \"media_type\": \"image/jpeg\", \"data\": \"...\"}}.",
+      "entrevista": "La interfaz le pide al modelo que responda siempre con un único objeto JSON: o bien {\"preguntas\": [\"...\"]}, o bien {\"pedido\": {...}} con el formato del esquema. Si la respuesta no es un JSON válido con una de esas dos formas, lo dice y permite reintentar. El campo relevamiento.confirmado lo pone la interfaz en true solo cuando el usuario confirma.",
+      "errores": "Si la API responde con error (clave inválida, sin saldo, límite de uso), la página muestra el motivo que informa la API y no pierde lo que el usuario ya escribió."
+    },
+    "prueba_sin_navegador": "La lógica (armar el pedido, partir adjuntos, calcular el estado de cada etapa, armar el pedido de cambio, leer respuestas de las APIs) tiene que poder probarse sin navegador y sin red, con respuestas de ejemplo."
+  },
+  "supuestos": [
+    "El modelo por defecto de la entrevista es claude-sonnet-5-5, y se puede cambiar en Conexión.",
+    "Las rondas de preguntas por iniciativa del modelo son 2, como en el factory; el usuario puede pedir más.",
+    "Las imágenes se reducen a 1600 píxeles de lado mayor antes de enviarse.",
+    "Las réplicas de software existente y los proyectos privados quedan para una versión posterior.",
+    "Un archivo .md o .txt adjunto se usa en la entrevista como parte del pedido y además viaja como adjunto.",
+    "El pedido de cambio que sale de editar un dato de diseño no pasa por la entrevista, salvo que el usuario la pida."
+  ],
+  "relevamiento": {
+    "rondas": 1,
+    "confirmado": true
+  }
+}

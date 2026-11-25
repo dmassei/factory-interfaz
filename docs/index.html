@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self'; connect-src https://api.github.com https://api.anthropic.com; base-uri 'none'; form-action 'none'">
+  <meta name="referrer" content="no-referrer">
+  <title>Factory</title>
+  <link rel="stylesheet" href="css/estilos.css">
+  <script type="module" src="js/app.js"></script>
+</head>
+<body>
+  <header>
+    <h1>Factory</h1>
+    <nav aria-label="Secciones">
+      <button type="button" data-ir="conexion">Conexión</button>
+      <button type="button" data-ir="pedido">Pedido nuevo</button>
+      <button type="button" data-ir="seguimiento">Seguimiento</button>
+      <button type="button" data-ir="proyectos">Proyectos</button>
+    </nav>
+  </header>
+
+  <main>
+    <div id="aviso" aria-live="polite"></div>
+
+    <section data-seccion="conexion" id="seccion-conexion">
+      <h2>Conexión</h2>
+      <div id="faltan"></div>
+      <form id="form-conexion" autocomplete="off">
+        <label for="repo">Repo del factory (dueño/nombre)</label>
+        <input id="repo" name="repo" type="text" placeholder="mi-usuario/Factory" spellcheck="false" autocapitalize="off">
+
+        <label for="token">Token de GitHub</label>
+        <input id="token" name="token" type="password" autocomplete="off" spellcheck="false">
+        <p class="nota">Guardado: <span id="token-guardado">sin cargar</span>. Dejalo vacío para conservar el guardado.</p>
+
+        <label for="clave">Clave de API de Anthropic</label>
+        <input id="clave" name="clave" type="password" autocomplete="off" spellcheck="false">
+        <p class="nota">Guardada: <span id="clave-guardada">sin cargar</span>. Dejala vacía para conservar la guardada.</p>
+
+        <label for="modelo">Modelo de la entrevista</label>
+        <input id="modelo" name="modelo" type="text" value="claude-sonnet-5-5" spellcheck="false" autocapitalize="off">
+
+        <label class="casilla"><input id="recordar" name="recordar" type="checkbox"> Recordar en este navegador</label>
+
+        <div class="acciones">
+          <button type="submit">Guardar y comprobar</button>
+          <button type="button" id="olvidar" class="secundario">Olvidar claves</button>
+        </div>
+      </form>
+
+      <h3>Qué permisos necesita el token</h3>
+      <p>Un token de acceso personal de grano fino, limitado al repo del factory, con estos permisos:</p>
+      <ul>
+        <li>Issues: lectura y escritura (para crear el pedido, comentar los adjuntos y poner la etiqueta).</li>
+        <li>Actions: lectura (para seguir la corrida).</li>
+        <li>Contents: lectura (para leer el esquema del pedido, la ficha del relevamiento y las etapas).</li>
+      </ul>
+      <p>Los proyectos que construye el factory son públicos y se leen sin permisos extra.</p>
+
+      <h3>El riesgo de recordar las claves</h3>
+      <p>Sin marcar la casilla, las claves se guardan solo mientras esta pestaña está abierta. Si la marcás, quedan guardadas en este navegador hasta que toques «Olvidar claves»: cualquiera que use este navegador, o una extensión con acceso a esta página, podría leerlas. No la marques en una computadora compartida.</p>
+      <p>Las claves solo viajan a su servicio: el token a api.github.com y la clave a api.anthropic.com.</p>
+    </section>
+
+    <section data-seccion="pedido" id="seccion-pedido" hidden>
+      <h2>Pedido nuevo</h2>
+      <div id="pedido-describir">
+        <label for="descripcion">¿Qué querés?</label>
+        <textarea id="descripcion" rows="6" placeholder="Por ejemplo: una página que convierta pulgadas a milímetros."></textarea>
+
+        <fieldset>
+          <legend>Tipo de pedido</legend>
+          <label class="casilla"><input type="radio" name="tipo" value="nuevo" checked> Software nuevo</label>
+          <label class="casilla"><input type="radio" name="tipo" value="cambio"> Cambio a un proyecto existente</label>
+        </fieldset>
+
+        <label for="archivos">Adjuntos (hasta 6: png, jpg, jpeg, gif, webp, md, txt)</label>
+        <input id="archivos" type="file" multiple accept=".png,.jpg,.jpeg,.gif,.webp,.md,.txt">
+        <p class="nota">Las imágenes se reducen en el navegador antes de enviarse.</p>
+      </div>
+      <div id="pedido-dinamico"></div>
+    </section>
+
+    <section data-seccion="seguimiento" id="seccion-seguimiento" hidden>
+      <h2>Seguimiento</h2>
+      <div id="seguimiento-dinamico"></div>
+    </section>
+
+    <section data-seccion="proyectos" id="seccion-proyectos" hidden>
+      <h2>Proyectos</h2>
+      <div id="proyectos-dinamico"></div>
+    </section>
+  </main>
+</body>
+</html>

@@ -1,0 +1,12 @@
+# Informe de tests
+informe-tests.xml
+
+# Lo que pueda generar una instalación local (el proyecto no tiene dependencias)
+node_modules/
+
+# Sistema y editores
+.DS_Store
+Thumbs.db
+*.swp
+.vscode/
+.idea/

@@ -1,0 +1,21 @@
+{
+  "descripcion": "Módulos del factory, en orden, y con qué trabajo o paso de la corrida se corresponde cada uno. Lo lee la interfaz para mostrar en qué etapa está un pedido. Si se renombra un trabajo o un paso de los workflows, se actualiza acá: scripts/verificar_etapas.py lo comprueba.",
+  "corrida": {
+    "workflow": "recorrido.yml",
+    "titulo": "Pedido #{issue}"
+  },
+  "etapas": [
+    { "id": "entrada", "nombre": "Entrada", "detalle": "Pedido y relevamiento", "origen": "interfaz" },
+    { "id": "preparar", "nombre": "Preparación", "detalle": "Valida el pedido y crea el repo", "trabajo": "Preparar (pedido y repo)" },
+    { "id": "fundacion", "nombre": "Fundación", "detalle": "Contrato y Brain del proyecto, si es nuevo", "trabajo": "Construir (agentes y capa 1)", "pasos": ["Agente de Fundación"], "opcional": true },
+    { "id": "spec", "nombre": "Spec writer", "detalle": "Criterios de aceptación", "trabajo": "Construir (agentes y capa 1)", "pasos": ["Agente Spec writer", "Verificar que hay spec"] },
+    { "id": "builder", "nombre": "Builder", "detalle": "Código y tests", "trabajo": "Construir (agentes y capa 1)", "pasos": ["Agente Builder", "Agente Builder (corrección)"] },
+    { "id": "capa1", "nombre": "Capa 1", "detalle": "Tests ejecutados y contados", "trabajo": "Construir (agentes y capa 1)", "pasos": ["Capa 1 (primer intento)", "Capa 1 (segundo intento)", "Resultado de la capa 1"] },
+    { "id": "revision", "nombre": "Revisores", "detalle": "Código y seguridad, con tests propios", "trabajo": "Revisión 1 / Revisores y Approver", "pasos": ["Revisor de código", "Revisor de seguridad", "Capa 1 con los tests de revisión"] },
+    { "id": "approver", "nombre": "Approver", "detalle": "Decide con los umbrales", "trabajo": "Revisión 1 / Revisores y Approver", "pasos": ["Approver"] },
+    { "id": "correccion", "nombre": "Corrección", "detalle": "El Builder corrige si no aprobó", "trabajo": "Corregir (Builder)", "opcional": true },
+    { "id": "revision2", "nombre": "Segunda revisión", "detalle": "Revisores y Approver otra vez", "trabajo": "Revisión 2 / Revisores y Approver", "opcional": true },
+    { "id": "entrega", "nombre": "Entrega", "detalle": "PR, merge y publicación", "trabajo": "Entregar (PR, merge y publicación)" },
+    { "id": "resultado", "nombre": "Resultado", "detalle": "Informe para quien pidió", "trabajo": "Informar a quien pidió" }
+  ]
+}

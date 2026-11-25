@@ -1,0 +1,28 @@
+factory: v0.1
+perfil:
+  tipo: app-web-estatica
+  stack: [html, css, javascript]
+entorno:
+  runtime: node 24
+verificar:
+  tests: >-
+    node --test
+    --test-reporter=spec --test-reporter-destination=stdout
+    --test-reporter=junit --test-reporter-destination=informe-tests.xml
+    "tests/**/*.test.js" "tests/revision/**/*.js"
+  reporte_junit: informe-tests.xml
+  minimo_ejecutados: 202
+  skips_permitidos: 0
+  carpeta_revision: tests/revision
+brain:
+  contexto:
+    - .factory/brain/contexto.md
+    - .factory/brain/decisiones.md
+  specs: .factory/specs
+revisores: [codigo, seguridad]
+sensibles:
+  - docs/index.html
+  - docs/js/
+publicacion:
+  tipo: github-pages
+  carpeta: /docs
