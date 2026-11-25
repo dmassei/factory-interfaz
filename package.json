@@ -1,0 +1,6 @@
+{
+  "name": "factory-interfaz",
+  "private": true,
+  "type": "module",
+  "description": "Interfaz web para pedir software al factory. Sin dependencias: este archivo solo declara que los .js son módulos ES."
+}

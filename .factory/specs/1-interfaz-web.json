@@ -1,0 +1,256 @@
+{
+  "id": "1",
+  "issue": "12",
+  "titulo": "Interfaz web del factory: conexión, pedido nuevo, seguimiento y proyectos",
+  "tipo": "pedido",
+  "escenario": "original",
+  "contexto": "Hoy usar el factory exige entrar a GitHub: crear un issue con el pedido en JSON, comentar los adjuntos en base64, poner la etiqueta factory:pedido y leer las corridas de Actions. Este trabajo construye una página web estática, publicada con GitHub Pages desde docs/, que hace todo eso desde el navegador con las claves del propio usuario, hablando solo con https://api.github.com y https://api.anthropic.com. El proyecto existe recién fundado: docs/index.html es un esqueleto ('En construcción'), docs/js/ está vacío y hay un único test de humo (tests/humo.test.js). Valen las decisiones D-01 a D-06 de .factory/brain/decisiones.md: HTML, CSS y JavaScript como módulos ES sin dependencias ni compilación, lógica pura separada de los bordes (DOM, fetch, almacenamiento, lienzo, reloj) y probada con node --test sin navegador ni red. La interfaz no copia el esquema del pedido, la ficha del relevamiento ni la lista de etapas: los lee del repo del factory cada vez (esquemas/pedido.json, agentes/relevamiento.md, brain/nucleo/etapas.json) con GET /repos/{factory}/contents/{ruta}. Los criterios citan las reglas de oficio/base/seguridad.md donde corresponde. Los criterios que hablan de 'con fetch inyectado' significan que el test reemplaza la función de red por una que registra las llamadas y devuelve respuestas de ejemplo; los nombres de funciones y módulos los decide el Builder.",
+  "alcance": [
+    "docs/index.html con las cuatro secciones (Conexión, Pedido nuevo, Seguimiento, Proyectos), en español rioplatense, con viewport para escritorio y teléfono, y una política de seguridad de contenido en un <meta http-equiv=\"Content-Security-Policy\">.",
+    "Conexión: repo del factory (dueño/nombre), token de GitHub, clave de API de Anthropic y modelo de la entrevista (por defecto claude-sonnet-5-5); casilla 'Recordar en este navegador' desmarcada por defecto (sessionStorage desmarcada, localStorage marcada); botón 'Olvidar claves' que borra de los dos; comprobación de que el token llega al repo del factory; texto con los permisos que necesita el token y el riesgo de recordar las claves.",
+    "Pedido nuevo: descripción libre, hasta 6 adjuntos (png, jpg, jpeg, gif, webp, md, txt) con reducción de imágenes en el navegador, elección entre software nuevo y cambio a un proyecto existente, entrevista con un modelo de Anthropic llamado desde el navegador, pantalla de confirmación campo por campo con supuestos marcados y lanzamiento en tres pasos (issue, comentarios de adjuntos, etiqueta) con reintento desde el paso que falló.",
+    "Seguimiento: lista de pedidos del más nuevo al más viejo con su estado; esquema de módulos según brain/nucleo/etapas.json con el estado de cada uno calculado a partir de la corrida; actualización cada 10 segundos mientras la corrida no terminó; resultado informado por el factory con enlaces https abribles.",
+    "Proyectos: lista de proyectos a partir de proyecto.nombre de los pedidos; datos de diseño leídos de .factory/pedidos/{numero}/ del repo del proyecto; edición de campos y 'Proponer cambio', que arma un pedido de escenario cambio con el valor anterior y el nuevo de cada campo editado y lo lleva a la misma confirmación.",
+    "Módulos de lógica pura en docs/js/ (armar y validar el pedido, partir adjuntos, calcular el estado de las etapas, armar el pedido de cambio, leer respuestas de las APIs) con tests en tests/ que corren sin navegador ni red."
+  ],
+  "fuera_de_alcance": [
+    "Pedidos de réplica de un software existente (escenario replica).",
+    "Proyectos privados (visibilidad privado).",
+    "Cualquier servidor propio, proxy o paso de compilación.",
+    "Escribir en el repo de un proyecto o modificar archivos del repo del factory; en el factory solo se crean issues, comentarios y etiquetas.",
+    "Decidir algo del recorrido: aprobar, mergear, publicar, reintentar corridas o cerrar y reabrir issues.",
+    "Agregar, quitar o editar los adjuntos de los datos de diseño de un proyecto: 'Proponer cambio' edita campos del pedido.",
+    "Más de 50 pedidos o corridas en las listas (no hay paginación más allá de per_page=50).",
+    "Recuperar claves olvidadas, rotarlas o crearlas: la página solo las usa y las guarda en el navegador.",
+    "Otros idiomas de la interfaz.",
+    "Dependencias, bibliotecas, fuentes o scripts de terceros."
+  ],
+  "criterios": [
+    {
+      "id": "C-01",
+      "descripcion": "La página es estática, en español, apta para teléfono y sin código de terceros.",
+      "como_se_verifica": "Leyendo docs/index.html: tiene <html lang=\"es\">, un <meta name=\"viewport\"> con width=device-width, carga el código con <script type=\"module\" src=\"...\"> de ruta relativa, no tiene ningún <script> sin src, ningún atributo on* ni enlaces javascript:, y ningún src o href hacia otro origen (todo src/href de script, link o img es relativo). Recorriendo docs/: no hay archivos de paquete de terceros y package.json no declara dependencies ni devDependencies.",
+      "origen": "pedido"
+    },
+    {
+      "id": "C-02",
+      "descripcion": "La política de seguridad de contenido solo permite el propio origen para el código y solo las dos APIs como destinos de conexión.",
+      "como_se_verifica": "Se lee el content del <meta http-equiv=\"Content-Security-Policy\"> de docs/index.html: default-src es 'self' o 'none'; script-src (o default-src si no hay script-src) contiene 'self' y no contiene 'unsafe-inline', 'unsafe-eval', 'strict-dynamic', comodines (*) ni otros orígenes; connect-src contiene https://api.github.com y https://api.anthropic.com y ningún otro origen remoto ni comodín. Ninguna directiva nombra un origen remoto distinto de esos dos.",
+      "origen": "pedido"
+    },
+    {
+      "id": "C-03",
+      "descripcion": "Ningún texto externo se interpreta como HTML ni se ejecuta como código.",
+      "como_se_verifica": "Ningún archivo de docs/js/ contiene innerHTML, outerHTML, insertAdjacentHTML, document.write, eval(, new Function ni setTimeout/setInterval con un texto como primer argumento. Además, el armado de la vista del resultado de un pedido, dado el texto '<img src=x onerror=alert(1)>', produce ese mismo texto literal como contenido de texto (no un elemento img). Regla: oficio/base/seguridad.md#S-07.",
+      "origen": "pedido"
+    },
+    {
+      "id": "C-04",
+      "descripcion": "Sin claves cargadas, las secciones que las necesitan no llaman a ninguna API y llevan a Conexión diciendo qué falta.",
+      "como_se_verifica": "Con fetch inyectado y almacenamiento vacío, abrir Pedido nuevo, Seguimiento o Proyectos produce cero llamadas de red, lleva a Conexión y muestra qué falta. Seguimiento y Proyectos requieren el repo del factory y el token de GitHub; Pedido nuevo requiere además la clave de Anthropic. Casos: sin nada cargado, para las tres secciones faltan repo y token (y para Pedido nuevo también la clave); con repo y token pero sin clave, Seguimiento y Proyectos no tienen faltantes y Pedido nuevo tiene como único faltante la clave de Anthropic.",
+      "origen": "pedido"
+    },
+    {
+      "id": "C-05",
+      "descripcion": "Las claves se guardan en sessionStorage salvo que el usuario marque 'Recordar en este navegador'; 'Olvidar claves' las borra de los dos lugares.",
+      "como_se_verifica": "Con dos almacenamientos inyectados (sesión y local): guardar con la casilla desmarcada escribe solo en el de sesión y deja vacío el local; guardar con la casilla marcada escribe en el local; 'Olvidar claves' deja vacíos de token y clave a los dos. Cargar la configuración con el de sesión vacío y el local vacío (equivale a cerrar la pestaña sin haber marcado la casilla) devuelve que faltan las claves. En docs/index.html la casilla no tiene el atributo checked. Regla: oficio/base/seguridad.md#S-03.",
+      "origen": "pedido"
+    },
+    {
+      "id": "C-06",
+      "descripcion": "El repo del factory se valida como dueño/nombre antes de usarse en una URL.",
+      "como_se_verifica": "Se aceptan 'dmassei/Factory' y 'una-org/mi.repo_2'. Se rechazan, sin llamar a la red, '', 'solo-nombre', 'a/b/c', '../x', 'a/..', 'a/b?x=1', 'a/b#c', 'https://github.com/a/b' y valores con espacios. Ninguna URL que arma la página para GitHub tiene un origen distinto de https://api.github.com. Regla: oficio/base/seguridad.md#S-12.",
+      "origen": "pedido"
+    },
+    {
+      "id": "C-07",
+      "descripcion": "Al guardar la conexión se comprueba que el token llega al repo del factory, y se dice claramente si no.",
+      "como_se_verifica": "Con fetch inyectado: guardar hace GET https://api.github.com/repos/{factory} con Authorization: Bearer {token} y Accept: application/vnd.github+json. Respuesta 200: se informa conexión correcta. Respuestas 401, 403 y 404, y un error de red: se muestra un mensaje distinto de éxito que dice que el token no llega al repo (y el motivo de la API si lo trae), sin mostrar el token. La sección Conexión muestra los permisos necesarios: Issues lectura y escritura, Actions lectura, Contents lectura, limitado al repo del factory; y un texto sobre el riesgo de recordar las claves en el navegador.",
+      "origen": "pedido"
+    },
+    {
+      "id": "C-08",
+      "descripcion": "Las claves nunca van en una URL, ni se escriben en la consola, ni se muestran completas, y cada una viaja solo a su servicio.",
+      "como_se_verifica": "Con fetch inyectado, recorriendo una conexión, una entrevista y un lanzamiento con token 'ghp_TOKENSECRETO123' y clave 'sk-ant-CLAVESECRETA456': ninguna URL llamada contiene ninguno de los dos; el token solo aparece en el encabezado Authorization de llamadas a https://api.github.com; la clave solo aparece en x-api-key de llamadas a https://api.anthropic.com; ningún cuerpo de pedido enviado contiene ninguno de los dos. Ningún archivo de docs/js/ llama a console.*. Los campos de token y clave son input type=\"password\"; la representación de una clave guardada que se muestra en pantalla no contiene la clave completa. Reglas: oficio/base/seguridad.md#S-01, oficio/base/seguridad.md#S-02.",
+      "origen": "pedido"
+    },
+    {
+      "id": "C-09",
+      "descripcion": "Toda llamada de red tiene tiempo límite y manejo de falla.",
+      "como_se_verifica": "Con fetch inyectado que registra sus argumentos, toda llamada que hace la página (GitHub y Anthropic) pasa una opción signal. Con un fetch que rechaza la promesa, la operación termina en un mensaje de error en pantalla y no en una excepción sin manejar. Regla: oficio/base/seguridad.md#S-10.",
+      "origen": "pedido"
+    },
+    {
+      "id": "C-10",
+      "descripcion": "Los archivos de configuración del factory se leen de su repo cada vez, decodificando base64.",
+      "como_se_verifica": "Con fetch inyectado: para obtener el esquema del pedido, la ficha del relevamiento y las etapas se hacen GET a https://api.github.com/repos/{factory}/contents/esquemas/pedido.json, .../contents/agentes/relevamiento.md y .../contents/brain/nucleo/etapas.json. Dada una respuesta de ejemplo con content en base64 partido en líneas (como lo devuelve GitHub) y texto con tildes y eñes, el contenido decodificado es el texto UTF-8 original. Ningún archivo de docs/ contiene una copia de la lista de etapas (por ejemplo, el texto 'Agente Spec writer') ni del esquema del pedido.",
+      "origen": "pedido"
+    },
+    {
+      "id": "C-11",
+      "descripcion": "Los adjuntos se validan antes de leerse o enviarse: hasta 6, de las extensiones admitidas.",
+      "como_se_verifica": "Se aceptan archivos .png, .jpg, .jpeg, .gif, .webp, .md y .txt (sin distinguir mayúsculas en la extensión). Se rechazan, con un mensaje que nombra el archivo, .svg, .html, .pdf, .exe y archivos sin extensión. Con 6 archivos ya adjuntos, un séptimo se rechaza con un mensaje que dice que el máximo es 6. Un .md o .txt de más de 600000 bytes se rechaza. Regla: oficio/base/seguridad.md#S-04.",
+      "origen": "pedido"
+    },
+    {
+      "id": "C-12",
+      "descripcion": "El nombre con el que viaja un adjunto cumple el formato del factory.",
+      "como_se_verifica": "Todo nombre que la página pone en un comentario de adjunto coincide con ^[A-Za-z0-9][A-Za-z0-9._-]{0,79}$, no contiene '..' y conserva una extensión admitida. Dados 'boceto 1.png', 'diseño.jpg', '.oculto.txt' y un nombre de 120 caracteres, el resultado es un nombre que cumple ese formato o un rechazo con mensaje; nunca un nombre fuera de formato. Si una imagen se convirtió a JPEG, su nombre termina en .jpg.",
+      "origen": "pedido"
+    },
+    {
+      "id": "C-13",
+      "descripcion": "Las imágenes se reducen a 1600 píxeles de lado mayor y, si hace falta, se convierten a JPEG bajando la calidad hasta entrar en 600000 bytes; si no entran, no se adjuntan.",
+      "como_se_verifica": "El cálculo de dimensiones destino da 4000x3000 → 1600x1200, 1000x3200 → 500x1600 y 800x600 → 800x600 (nunca agranda), conservando la proporción con redondeo a entero. Con un codificador inyectado que devuelve tamaños según la calidad: si el primer intento ya pesa ≤ 600000 bytes se usa ese; si no, se reintenta en JPEG con calidad decreciente hasta que pese ≤ 600000; si con la calidad mínima sigue pesando más, el resultado es un error que dice que la imagen no entra y la imagen no queda en la lista de adjuntos.",
+      "origen": "pedido"
+    },
+    {
+      "id": "C-14",
+      "descripcion": "Cada adjunto se parte en comentarios con el formato exacto del factory, de hasta 45000 caracteres de base64 por parte.",
+      "como_se_verifica": "Dado el nombre 'boceto.jpg' y un base64 de 100000 caracteres, se obtienen 3 cuerpos de comentario con 45000, 45000 y 10000 caracteres de base64; el primero es exactamente '<!-- factory:adjunto nombre=\"boceto.jpg\" parte=\"1\" de=\"3\" -->\\n```base64\\n' + los primeros 45000 caracteres + '\\n```', y los otros con parte=\"2\" y parte=\"3\". Un base64 de 45000 caracteres da 1 parte. Al concatenar los datos de todas las partes en orden se obtiene el base64 original. Cada cuerpo armado es aceptado por la expresión MARCA de scripts/adjuntos.py del factory.",
+      "origen": "pedido"
+    },
+    {
+      "id": "C-15",
+      "descripcion": "La entrevista llama a la API de Anthropic desde el navegador con los encabezados, el modelo y las instrucciones previstos, e incluye los adjuntos.",
+      "como_se_verifica": "Con fetch inyectado: la llamada es POST https://api.anthropic.com/v1/messages con x-api-key: {clave}, anthropic-version: 2023-06-01, content-type: application/json y anthropic-dangerous-direct-browser-access: true; el cuerpo JSON tiene model (el de Conexión; claude-sonnet-5-5 si el usuario no lo cambió), max_tokens numérico, system y messages. system contiene el texto de agentes/relevamiento.md y el de esquemas/pedido.json leídos del factory, y la instrucción de responder con un único objeto JSON {\"preguntas\": [...]} o {\"pedido\": {...}}. El primer mensaje del usuario contiene la descripción escrita, si es software nuevo o un cambio (y a qué proyecto), el texto de cada adjunto .md o .txt, y un bloque {\"type\": \"image\", \"source\": {\"type\": \"base64\", \"media_type\": ..., \"data\": ...}} por cada imagen, con el media_type que corresponde al formato enviado.",
+      "origen": "pedido"
+    },
+    {
+      "id": "C-16",
+      "descripcion": "La respuesta del modelo se acepta solo si es un objeto JSON con preguntas o con pedido; si no, se dice y se permite reintentar.",
+      "como_se_verifica": "Dada una respuesta de ejemplo de la API cuyo primer bloque de texto es '{\"preguntas\": [\"¿Para quién es?\", \"¿Qué unidades?\"]}', se obtienen esas dos preguntas, que se muestran numeradas 1 y 2. Con '{\"pedido\": {...}}' se obtiene el pedido. Con 'Hola, ¿en qué te ayudo?', con '{\"otra\": 1}', con '{\"preguntas\": \"texto\"}' y con '{\"preguntas\": [1, 2]}' se obtiene un error que se muestra al usuario, con opción de reintentar, sin perder la descripción, los adjuntos ni las respuestas ya escritas. Las preguntas se muestran como texto. Regla: oficio/base/seguridad.md#S-08.",
+      "origen": "pedido"
+    },
+    {
+      "id": "C-17",
+      "descripcion": "El modelo hace hasta 2 rondas de preguntas por iniciativa propia; el usuario puede pedir más; las rondas quedan registradas en el pedido.",
+      "como_se_verifica": "Simulando con respuestas de ejemplo: tras 2 rondas de preguntas respondidas, la siguiente llamada indica en su contenido que no se hagan más preguntas y se devuelva el pedido. Si el usuario pide otra ronda, la siguiente llamada permite preguntas. En el pedido resultante, relevamiento.rondas es la cantidad de rondas de preguntas respondidas y relevamiento.rondas_extra_pedidas la cantidad de rondas que pidió el usuario (se omite o es 0 si no pidió ninguna).",
+      "origen": "pedido"
+    },
+    {
+      "id": "C-18",
+      "descripcion": "Si la API de Anthropic responde con error, se muestra el motivo que informa y no se pierde lo escrito.",
+      "como_se_verifica": "Dadas respuestas de ejemplo con estado 401 y cuerpo {\"type\": \"error\", \"error\": {\"type\": \"authentication_error\", \"message\": \"invalid x-api-key\"}}, 400 con message que menciona el saldo, y 429 con rate_limit_error: el mensaje mostrado incluye el message de la API y la descripción, los adjuntos y las respuestas siguen cargados. Ningún mensaje mostrado contiene la clave. Regla: oficio/base/seguridad.md#S-02.",
+      "origen": "pedido"
+    },
+    {
+      "id": "C-19",
+      "descripcion": "La confirmación muestra el pedido campo por campo, con los supuestos marcados, permite editar cualquier campo y nada se lanza sin confirmar.",
+      "como_se_verifica": "Dado un pedido devuelto por el modelo con supuestos ['A', 'B'], la pantalla de confirmación muestra cada campo presente del pedido y los supuestos identificados como supuestos. Editar el objetivo cambia el pedido que se lanzaría. Con fetch inyectado, hasta que el usuario confirma no hay ninguna llamada a /issues. Al confirmar, el pedido enviado tiene relevamiento.confirmado = true, aunque el modelo haya devuelto false o lo haya omitido; antes de confirmar, la función de lanzamiento rechaza un pedido con relevamiento.confirmado distinto de true.",
+      "origen": "pedido"
+    },
+    {
+      "id": "C-20",
+      "descripcion": "Antes de lanzar se comprueban los campos obligatorios del esquema y los límites de esta versión.",
+      "como_se_verifica": "Con el esquema esquemas/pedido.json del factory como dato: un pedido sin objetivo o sin criterio_de_exito no se lanza y se informa qué campos faltan, tomados de la lista required del esquema leído (si el esquema de ejemplo agrega un campo obligatorio, también se exige). Un pedido con escenario replica o con proyecto.visibilidad privado no se lanza y se dice que esta versión no lo admite. Un pedido nuevo armado por la página lleva proyecto.visibilidad publico y solicitante {\"tipo\": \"persona\", \"canal\": \"chat\"}. Un cambio a un proyecto existente lleva escenario cambio y proyecto.nombre igual al proyecto elegido de la lista.",
+      "origen": "pedido"
+    },
+    {
+      "id": "C-21",
+      "descripcion": "Lanzar un pedido crea el issue sin etiquetas, comenta cada parte de cada adjunto y pone factory:pedido al final.",
+      "como_se_verifica": "Con fetch inyectado, confirmar un pedido con una imagen que da 2 partes produce, en este orden: POST https://api.github.com/repos/{factory}/issues con title 'Pedido: ' + los primeros 80 caracteres del objetivo (completo si tiene 80 o menos), sin campo labels, y body que contiene el pedido en un bloque ```json cuyo contenido parseado es igual al pedido confirmado; dos POST .../issues/{n}/comments con las partes 1 y 2; y por último POST .../issues/{n}/labels con {\"labels\": [\"factory:pedido\"]}. Ninguna llamada usa PUT, PATCH ni DELETE, ni toca /contents. Al terminar, la página pasa al seguimiento del issue {n}.",
+      "origen": "pedido"
+    },
+    {
+      "id": "C-22",
+      "descripcion": "Si un paso del lanzamiento falla, la página dice cuál y permite reintentar desde ese paso sin crear otro issue.",
+      "como_se_verifica": "Con fetch inyectado que falla el segundo comentario de adjunto: la página informa que falló el envío de ese adjunto (parte 2) y no pone la etiqueta. Al reintentar, no se hace otro POST /issues ni se repite el primer comentario: se envía la parte 2 y después la etiqueta, sobre el mismo issue {n}. Si falla la creación del issue, al reintentar se crea uno solo. Si falla la etiqueta, al reintentar solo se pone la etiqueta.",
+      "origen": "pedido"
+    },
+    {
+      "id": "C-23",
+      "descripcion": "Seguimiento lista los pedidos del factory del más nuevo al más viejo, con su estado.",
+      "como_se_verifica": "Con fetch inyectado, se hace GET https://api.github.com/repos/{factory}/issues?labels=factory:pedido&state=all&per_page=50. Dada una respuesta de ejemplo con issues 3, 10 y 7 en cualquier orden, se muestran 10, 7, 3. Los elementos con pull_request se omiten. El pedido de cada uno se lee del bloque ```json del cuerpo; si el bloque falta o no es JSON válido, ese pedido se muestra como ilegible sin que falle la lista. El estado de cada pedido se toma de su corrida más reciente (ver C-24): 'sin corrida' si no tiene, 'en curso' si no terminó, y si terminó, según su conclusion (éxito, falla, cancelada).",
+      "origen": "pedido"
+    },
+    {
+      "id": "C-24",
+      "descripcion": "La corrida de un pedido es la más reciente del workflow del recorrido cuyo título coincide exactamente con el del pedido.",
+      "como_se_verifica": "Se usan corrida.workflow y corrida.titulo de brain/nucleo/etapas.json (hoy recorrido.yml y 'Pedido #{issue}'): GET https://api.github.com/repos/{factory}/actions/workflows/recorrido.yml/runs?per_page=50. Dadas corridas de ejemplo con display_title 'Pedido #1' (dos, con created_at distintos), 'Pedido #10' y 'Pedido #12', para el issue 1 se elige la 'Pedido #1' de created_at más reciente, nunca 'Pedido #10' ni 'Pedido #12'. Para un issue sin corridas, el resultado es que no hay corrida. Los trabajos se leen con GET .../actions/runs/{id}/jobs?per_page=100.",
+      "origen": "pedido"
+    },
+    {
+      "id": "C-25",
+      "descripcion": "El estado de cada etapa se calcula con las reglas del contrato, a partir de etapas.json y de los trabajos y pasos de la corrida.",
+      "como_se_verifica": "Para una etapa con pasos se consideran los pasos de su trabajo cuyo name está en la lista de pasos; si no declara pasos, el trabajo entero. Las reglas se evalúan en este orden: en curso si alguno tiene status in_progress; con falla si alguno terminó con conclusion failure o cancelled; salteada si todos terminaron en skipped, o si el trabajo no existe en la corrida y la etapa es opcional; lista si todos terminaron (status completed) y al menos uno con success; pendiente en cualquier otro caso (incluido un trabajo inexistente en una etapa no opcional, o ningún paso de la lista presente). La etapa con origen interfaz (entrada) está lista en cuanto existe el issue, haya o no corrida. Sin corrida, todas las demás están pendientes. Casos: un trabajo con pasos ['success', 'skipped'] → lista; ['success', 'in_progress'] → en curso; ['success', 'failure'] → con falla; ['skipped', 'skipped'] → salteada; ['success', 'queued'] → pendiente.",
+      "origen": "pedido"
+    },
+    {
+      "id": "C-26",
+      "descripcion": "Ejemplo del pedido: Preparar terminado y Agente Builder en curso.",
+      "como_se_verifica": "Con el etapas.json actual del factory y una corrida de ejemplo donde 'Preparar (pedido y repo)' terminó en success y, en 'Construir (agentes y capa 1)', 'Agente Spec writer' y 'Verificar que hay spec' terminaron en success, 'Agente Builder' está in_progress y los pasos de capa 1 están queued, y los demás trabajos están queued o no existen todavía: Entrada, Preparación y Spec writer figuran listos, Builder en curso, y Capa 1, Revisores, Approver, Entrega y Resultado pendientes. Ninguna etapa figura con falla.",
+      "origen": "pedido"
+    },
+    {
+      "id": "C-27",
+      "descripcion": "Ejemplo del pedido: aprobado en la primera revisión, con Corrección y Segunda revisión salteadas.",
+      "como_se_verifica": "Con el etapas.json actual y una corrida terminada donde los trabajos 'Corregir (Builder)' y 'Revisión 2 / Revisores y Approver' tienen conclusion skipped (con todos sus pasos skipped o sin pasos) y los demás success: Corrección y Segunda revisión figuran salteadas, no con falla ni pendientes. Lo mismo si esos dos trabajos no aparecen en la lista de trabajos de la corrida, porque son etapas opcionales.",
+      "origen": "pedido"
+    },
+    {
+      "id": "C-28",
+      "descripcion": "Mientras la corrida no terminó, el esquema se vuelve a consultar cada 10 segundos; cuando termina, se deja de consultar.",
+      "como_se_verifica": "Con reloj o temporizador inyectado y fetch inyectado: con una corrida de status in_progress se programa una nueva consulta a los 10000 ms; cuando la corrida llega con status completed se muestra el estado final y no se programa ninguna consulta más. Salir del seguimiento de ese pedido cancela la consulta programada.",
+      "origen": "pedido"
+    },
+    {
+      "id": "C-29",
+      "descripcion": "Al terminar, se muestra el resultado que informó el factory: el último comentario del issue que no es un adjunto, como texto, con enlaces https abribles en otra pestaña.",
+      "como_se_verifica": "Dados comentarios de ejemplo [texto 'Arrancó', adjunto con '<!-- factory:adjunto ...', 'Publicado en https://ejemplo.github.io/x/ listo\\nSegunda línea', adjunto], el resultado es el tercero. Se muestra conservando el salto de línea; 'https://ejemplo.github.io/x/' es un enlace con target=\"_blank\" y rel que incluye noopener y noreferrer; un 'http://x.com', un 'javascript:alert(1)' y un '[a](javascript:alert(1))' del mismo texto no son enlaces, solo texto. El Markdown no se interpreta como HTML. Regla: oficio/base/seguridad.md#S-07.",
+      "origen": "pedido"
+    },
+    {
+      "id": "C-30",
+      "descripcion": "Proyectos lista los proyectos construidos a partir de los pedidos y lee sus datos de diseño del repo de cada uno.",
+      "como_se_verifica": "Dados pedidos de ejemplo con proyecto.nombre 'calculadora-pesos', 'calculadora-pesos' y 'otro', en el factory 'dmassei/Factory', la lista tiene 'calculadora-pesos' y 'otro' una vez cada uno, con repos dmassei/calculadora-pesos y dmassei/otro. Un nombre que no cumple ^[a-z0-9][a-z0-9-]{1,48}[a-z0-9]$ se omite y no se usa en ninguna URL. Al abrir uno, con fetch inyectado, se hace GET https://api.github.com/repos/dmassei/calculadora-pesos/contents/.factory/pedidos; con entradas '12', '3' y '7' se leen sus pedido.json (y su carpeta adjuntos/ si existe) y se muestran en orden 3, 7, 12, cada uno con sus campos y la lista de sus adjuntos por nombre (los .md y .txt, con su contenido como texto). Si la respuesta es 404, la página dice que el proyecto todavía no tiene datos de diseño guardados. Ninguna llamada a un repo de proyecto usa un método distinto de GET.",
+      "origen": "pedido"
+    },
+    {
+      "id": "C-31",
+      "descripcion": "'Proponer cambio' exige una frase y arma un pedido de escenario cambio con el valor anterior y el nuevo de cada campo editado, que pasa por la misma confirmación.",
+      "como_se_verifica": "Dado el pedido original de 'calculadora-pesos' (número 3) y una versión editada donde solo cambió entradas_y_salidas, con la frase 'mostrar el peso también en libras': el pedido armado tiene escenario cambio, proyecto.nombre 'calculadora-pesos', proyecto.visibilidad publico, objetivo igual a la frase, relevamiento.confirmado false, supuestos como arreglo, y en anexos una lista con exactamente un elemento que indica el pedido de origen (3), el campo 'entradas_y_salidas', su valor anterior y su valor nuevo. Los campos que no cambiaron no figuran. Con la frase vacía o solo espacios, no se arma el pedido y se pide la frase. Sin campos editados, se indica que no hay cambios. El pedido armado se muestra en la pantalla de confirmación de C-19 y se lanza como en C-21; no se llama a la entrevista salvo que el usuario la pida.",
+      "origen": "pedido"
+    },
+    {
+      "id": "C-32",
+      "descripcion": "La página nunca escribe en el repo de un proyecto ni modifica archivos del factory.",
+      "como_se_verifica": "Con fetch inyectado, recorriendo conexión, entrevista, lanzamiento, seguimiento y proyectos: todas las llamadas que no son GET van a https://api.github.com/repos/{factory}/issues, .../issues/{n}/comments o .../issues/{n}/labels, o a https://api.anthropic.com/v1/messages. Ningún archivo de docs/js/ arma URLs con /merges, /pulls, /contents con un método distinto de GET, /dispatches ni /pages.",
+      "origen": "pedido"
+    },
+    {
+      "id": "C-33",
+      "descripcion": "La lógica se prueba sin navegador ni red.",
+      "como_se_verifica": "El comando de verificación del contrato (node --test ... \"tests/**/*.test.js\" \"tests/revision/**/*.js\") pasa sin red y sin navegador, con 0 tests salteados, e incluye tests para armar el pedido, partir adjuntos, calcular el estado de las etapas, armar el pedido de cambio y leer las respuestas de las APIs de GitHub y de Anthropic a partir de respuestas de ejemplo. Los módulos de docs/js/ que contienen esa lógica se importan en Node sin error (no usan document, window, localStorage ni fetch globales al cargarse). El test de humo existente sigue pasando.",
+      "origen": "pedido"
+    }
+  ],
+  "zonas": [
+    "docs/index.html",
+    "docs/js/",
+    "docs/css/",
+    "tests/"
+  ],
+  "supuestos": [
+    "El modelo por defecto de la entrevista es claude-sonnet-5-5, y se puede cambiar en Conexión (C-15).",
+    "Las rondas de preguntas por iniciativa del modelo son 2; el usuario puede pedir más (C-17).",
+    "Las imágenes se reducen a 1600 píxeles de lado mayor antes de enviarse (C-13).",
+    "Las réplicas de software existente y los proyectos privados quedan para una versión posterior (C-20).",
+    "Un archivo .md o .txt adjunto se usa en la entrevista como parte del pedido y además viaja como adjunto (C-15, C-21).",
+    "El pedido de cambio que sale de editar un dato de diseño no pasa por la entrevista, salvo que el usuario la pida (C-31).",
+    "El valor anterior y el nuevo de cada campo editado viajan en anexos porque es el único campo de forma libre de esquemas/pedido.json, que no admite propiedades adicionales (C-31)."
+  ],
+  "decisiones_relacionadas": [
+    ".factory/brain/decisiones.md#D-01",
+    ".factory/brain/decisiones.md#D-02",
+    ".factory/brain/decisiones.md#D-03",
+    ".factory/brain/decisiones.md#D-04",
+    ".factory/brain/decisiones.md#D-06"
+  ],
+  "banderas": {
+    "operacion_irreversible": false,
+    "dependencias_nuevas": false,
+    "modifica_tests_existentes": false,
+    "detalle": "No hay dependencias nuevas: todo con lo que traen el navegador y Node 24. tests/humo.test.js se conserva sin cambios. El software resultante crea issues, comentarios y etiquetas en el repo del factory del usuario, siempre después de su confirmación explícita; el trabajo en sí no hace ninguna operación irreversible."
+  }
+}

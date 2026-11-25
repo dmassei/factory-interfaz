@@ -1,0 +1,118 @@
+:root {
+  --fondo: #f7f7f5;
+  --texto: #1f2328;
+  --suave: #5b6168;
+  --borde: #d0d4d9;
+  --acento: #1f5fbf;
+  --ok: #1a7f37;
+  --error: #b42318;
+  --curso: #9a6700;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  color: var(--texto);
+  background: var(--fondo);
+}
+
+* { box-sizing: border-box; }
+
+body { margin: 0; line-height: 1.5; }
+
+header {
+  background: #fff;
+  border-bottom: 1px solid var(--borde);
+  padding: 0.75rem 1rem;
+}
+
+header h1 { margin: 0 0 0.5rem; font-size: 1.4rem; }
+
+nav { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+
+nav button[aria-current="page"] { background: var(--acento); color: #fff; border-color: var(--acento); }
+
+main { max-width: 52rem; margin: 0 auto; padding: 1rem; }
+
+section { background: #fff; border: 1px solid var(--borde); border-radius: 8px; padding: 1rem; }
+
+label { display: block; margin-top: 0.75rem; font-weight: 600; }
+
+label.casilla { font-weight: 400; display: flex; gap: 0.5rem; align-items: center; }
+
+input[type="text"], input[type="password"], textarea, select {
+  width: 100%;
+  font: inherit;
+  padding: 0.5rem;
+  border: 1px solid var(--borde);
+  border-radius: 6px;
+}
+
+textarea { resize: vertical; }
+
+fieldset { border: 1px solid var(--borde); border-radius: 6px; margin-top: 0.75rem; }
+
+button {
+  font: inherit;
+  padding: 0.45rem 0.9rem;
+  border-radius: 6px;
+  border: 1px solid var(--acento);
+  background: var(--acento);
+  color: #fff;
+  cursor: pointer;
+}
+
+button.secundario, nav button { background: #fff; color: var(--acento); }
+
+button[disabled] { opacity: 0.5; cursor: not-allowed; }
+
+.acciones { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 1rem; }
+
+.nota { color: var(--suave); font-size: 0.92rem; }
+
+.aviso { padding: 0.6rem 0.8rem; border-radius: 6px; border: 1px solid; }
+.aviso-error { color: var(--error); border-color: var(--error); background: #fdf0ef; }
+.aviso-ok { color: var(--ok); border-color: var(--ok); background: #eef8f1; }
+.aviso-info { color: var(--suave); border-color: var(--borde); }
+
+.faltan { color: var(--error); }
+
+.texto-externo { white-space: pre-wrap; overflow-wrap: anywhere; }
+
+pre.texto-externo { background: var(--fondo); padding: 0.5rem; border-radius: 6px; font-size: 0.9rem; }
+
+.supuestos { padding-left: 1.2rem; }
+.supuesto { color: var(--curso); }
+
+.preguntas ol li { margin-bottom: 0.75rem; }
+.preguntas label { font-weight: 400; }
+
+.etapas { list-style: none; padding: 0; display: grid; gap: 0.4rem; }
+.etapa {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 0 0.5rem;
+  border: 1px solid var(--borde);
+  border-left-width: 6px;
+  border-radius: 6px;
+  padding: 0.4rem 0.6rem;
+}
+.etapa-nombre { font-weight: 600; }
+.etapa-detalle { grid-column: 1 / -1; color: var(--suave); font-size: 0.9rem; }
+.etapa-lista { border-left-color: var(--ok); }
+.etapa-en-curso { border-left-color: var(--curso); }
+.etapa-con-falla { border-left-color: var(--error); }
+.etapa-salteada { border-left-color: var(--borde); color: var(--suave); }
+.etapa-pendiente { border-left-color: var(--borde); }
+
+.lista-pedidos, .lista-proyectos { list-style: none; padding: 0; }
+.lista-pedidos li, .lista-proyectos li {
+  display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center;
+  padding: 0.4rem 0; border-bottom: 1px solid var(--borde);
+}
+.pedido-titulo { flex: 1 1 12rem; }
+.pedido-estado { color: var(--suave); }
+
+.pedido-proyecto { border-top: 1px solid var(--borde); margin-top: 1rem; padding-top: 0.5rem; }
+
+@media (max-width: 600px) {
+  main { padding: 0.5rem; }
+  section { padding: 0.75rem; }
+  .acciones button { flex: 1 1 100%; }
+}

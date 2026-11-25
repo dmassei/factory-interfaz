@@ -1,0 +1,224 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Pedido completo",
+  "description": "Salida del relevamiento y entrada del Spec writer.",
+  "type": "object",
+  "required": [
+    "proyecto",
+    "escenario",
+    "objetivo",
+    "criterio_de_exito",
+    "supuestos",
+    "relevamiento"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "issue": {
+      "type": "string",
+      "description": "Lo completa el factory al registrar el pedido"
+    },
+    "proyecto": {
+      "type": "object",
+      "description": "A qué proyecto pertenece el pedido",
+      "required": [
+        "nombre",
+        "visibilidad"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "nombre": {
+          "type": "string",
+          "pattern": "^[a-z0-9][a-z0-9-]{1,48}[a-z0-9]$",
+          "description": "Nombre del repo: minúsculas, números y guiones"
+        },
+        "descripcion": {
+          "type": "string",
+          "description": "Una línea"
+        },
+        "visibilidad": {
+          "enum": [
+            "publico",
+            "privado"
+          ]
+        }
+      }
+    },
+    "escenario": {
+      "enum": [
+        "original",
+        "replica",
+        "cambio"
+      ]
+    },
+    "solicitante": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "tipo": {
+          "enum": [
+            "persona",
+            "bot"
+          ]
+        },
+        "canal": {
+          "enum": [
+            "chat",
+            "github",
+            "otro"
+          ]
+        }
+      }
+    },
+    "objetivo": {
+      "type": "string",
+      "description": "Qué problema resuelve y para qué"
+    },
+    "usuarios": {
+      "type": "string",
+      "description": "Quién lo usa o qué sistema lo consume"
+    },
+    "entradas_y_salidas": {
+      "type": "string"
+    },
+    "ejemplos": {
+      "type": "array",
+      "description": "Casos concretos: ante tal entrada, tal resultado",
+      "items": {
+        "type": "object",
+        "required": [
+          "entrada",
+          "resultado"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "entrada": {
+            "type": "string"
+          },
+          "resultado": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "limites": {
+      "type": "array",
+      "description": "Qué no debe hacer o qué no debe cambiar",
+      "items": {
+        "type": "string"
+      }
+    },
+    "entorno": {
+      "type": "string",
+      "description": "Dónde va a correr"
+    },
+    "criterio_de_exito": {
+      "type": "string",
+      "description": "Cómo sabe quien pidió que está bien"
+    },
+    "anexos": {
+      "type": "object",
+      "description": "Datos que el pedido fija y que la spec tiene que respetar: tablas, listas, valores. Forma libre."
+    },
+    "referencia": {
+      "type": "object",
+      "description": "Obligatorio en el escenario replica",
+      "required": [
+        "nombre",
+        "titularidad",
+        "acceso",
+        "funcionalidades_elegidas"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "nombre": {
+          "type": "string"
+        },
+        "titularidad": {
+          "enum": [
+            "propia",
+            "abierta",
+            "terceros"
+          ]
+        },
+        "licencia": {
+          "type": "string",
+          "description": "Obligatorio si la titularidad es abierta"
+        },
+        "acceso": {
+          "enum": [
+            "codigo",
+            "ejecutable",
+            "documentacion",
+            "observacion"
+          ]
+        },
+        "funcionalidades_elegidas": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "required": [
+              "nombre",
+              "comportamiento"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "nombre": {
+                "type": "string"
+              },
+              "comportamiento": {
+                "type": "string",
+                "description": "Ante tal entrada, tal resultado"
+              }
+            }
+          }
+        }
+      }
+    },
+    "supuestos": {
+      "type": "array",
+      "description": "Lo que se completó sin respuesta de quien pidió. Vacío si no hay.",
+      "items": {
+        "type": "string"
+      }
+    },
+    "relevamiento": {
+      "type": "object",
+      "required": [
+        "rondas",
+        "confirmado"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "rondas": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "rondas_extra_pedidas": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "confirmado": {
+          "type": "boolean",
+          "description": "Quien pidió confirmó el pedido tal como quedó"
+        }
+      }
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "escenario": {
+            "const": "replica"
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "referencia"
+        ]
+      }
+    }
+  ]
+}
